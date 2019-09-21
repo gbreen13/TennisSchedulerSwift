@@ -9,7 +9,7 @@ The setup:
 - Contract tennis time is typically weekly and for doubles players
 - the group that participates has more than four people so that we can have substitutes and not have to play every week
 - some members may choose to play less than others (e.g. 50% participant)
-- there may be some locked
+- there may be some blocked weeks on the schedule when the facility is closed (e.g. holiday)
 - some members have blocked weeks that they simply cannot play.
 - we want to make sure that the players are evenly scrambled so the mix is not repetitive.
 
