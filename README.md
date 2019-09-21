@@ -1,5 +1,5 @@
 # TennisSchedulerSwift
-This program is a console app for generating a tennis schedule for contract tennis time.
+This program is a MACOS console app for generating a tennis schedule for contract tennis time.  It is my first swift app and ported from a similar app developed in C# as an exercise
 
 The goal:
 - create a tennis schedule for contract tennis time that adheres to certain rules (below) and calculates what everyone
