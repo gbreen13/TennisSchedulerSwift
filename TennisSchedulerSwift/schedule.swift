@@ -16,6 +16,7 @@ class Schedule: Codable, CustomStringConvertible {
     var playWeeks: [PlayWeek]?
     var blockedDays: [Date]?    // weeks courts are closed (e.g. Thanksgiving)
     var players:[Player]?       // all of the members
+    var isBuilt: Bool = false   // is it built?
     
     enum CodingKeys: CodingKey {
         case startDate, endDate, courtMinutes, playWeeks, blockedDays, players
@@ -40,10 +41,20 @@ class Schedule: Codable, CustomStringConvertible {
     }
     
     enum ScheduleError: Error {
-        case noStartDate
-        case noEndDate
-        case startDateAfterEndDate
+        case noStartDate(String)
+        case noEndDate(String)
+        case startDateAfterEndDate(String)
     }
+    
+    func FindPlayer(name: String) ->Player? {
+        for p in self.players! {
+            if p.name == name {
+                return p;
+            }
+        }
+        return nil
+    }
+    
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         var when: String? = try (container.decodeIfPresent(String.self, forKey: .startDate) ?? nil)
@@ -53,7 +64,7 @@ class Schedule: Codable, CustomStringConvertible {
             dateFormatter.dateFormat = "MM/dd/yy"
             self.startDate = dateFormatter.date(from: when!)!
         } else {
-            throw ScheduleError.noStartDate
+            throw ScheduleError.noStartDate("No Start Date")
         }
         
         when = try (container.decodeIfPresent(String.self, forKey: .endDate) ?? nil)
@@ -62,10 +73,10 @@ class Schedule: Codable, CustomStringConvertible {
             dateFormatter.dateFormat = "MM/dd/yy"
             self.endDate = dateFormatter.date(from: when!)!
         } else {
-            throw ScheduleError.noEndDate
+            throw ScheduleError.noEndDate("No End Date")
         }
         
-        if endDate! < startDate! {throw ScheduleError.startDateAfterEndDate}
+        if endDate! < startDate! {throw ScheduleError.startDateAfterEndDate("End Date before Start Date")}
         
         
         self.courtMinutes = try (container.decodeIfPresent(Int.self, forKey: .courtMinutes) ?? nil)
@@ -82,18 +93,167 @@ class Schedule: Codable, CustomStringConvertible {
         //  Validate PlayWeeks.  If there is nothing in the Playweek, create the array
         //
         if self.playWeeks == nil {
-            print("creating playweek list")
             self.playWeeks = [PlayWeek]()
             var thisWeek: Date = startDate!
             while thisWeek < endDate! {
                 self.playWeeks!.append(PlayWeek(date:thisWeek))
                 thisWeek = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: thisWeek)!
             }
-            print("done creating playweek list")
+        }
+
+        
+        if  self.players!.count < Constants.minimumNumberOfPlayers {
+            throw ScheduleError.startDateAfterEndDate("Need " + String(Constants.minimumNumberOfPlayers) + " players and there are only " + String(self.players!.count))
+        }
+//  figure out how many weeks each person gets to play this season.  This is a function of how many players there are (e.g. if four players,
+//  everyone plays every week.  If 6 players, everyone plays 4 out of 6 weeks.  We also factor in the playing percentage weight.
+//  a value of 1.0 means this is a full time player - this affects the player's cost and the nujmber of weeks they get to play.  a .5 means they
+//  play half as many weeks as a 1.0 weighted player.  The individual's cost will be calculated based on the total number of weeks each person plays
+//
+        var totalweight = 0.0
+        for p in self.players! {
+            totalweight += p.percentPlaying!
+        }
+        let unweightedWeeksPlying: Double = Double(Constants.minimumNumberOfPlayers * self.playWeeks!.count)
+        for p in self.players! {
+            let weightedBias:Double = (p.percentPlaying! * unweightedWeeksPlying) / totalweight
+            p.numWeeks = Int(weightedBias.rounded())
+        }
+//
+//  Becase of rounding errors, we may need to tweak individual's playing weeks up or down one to align with the actual number
+//  of playing slots available.
+//
+
+        let playingslots = Constants.minimumNumberOfPlayers * self.playWeeks!.count
+        var calculatedSlots = 0
+        
+        for p in self.players! {
+            calculatedSlots += p.numWeeks!
+        }
+        if playingslots != calculatedSlots {
+            print("Actual Slots = \(playingslots) but calculated slots = \(calculatedSlots)")
+            var index =  Int.random(in: 0 ..< self.players!.count)
+            while calculatedSlots < playingslots {
+                let p = self.players![index]
+                p.numWeeks! += 1
+                calculatedSlots += 1
+                index = (index + 1) % self.players!.count
+            }
+            while calculatedSlots > playingslots {
+                let p = self.players![index]
+                p.numWeeks! -= 1
+                calculatedSlots -= 1
+                index = (index + 1) % self.players!.count
+            }
+        }
+        for pw in self.playWeeks! {
+            pw.scheduledPlayers = pw.scheduledPlayersNames!.map{ self.FindPlayer(name:$0)! }
+        }
+    }
+//
+//  FindSlot attempts to find a an avaiable week to schedule this player.  We randomly select a week to start and then walk through the PlayWeeks from there.
+//  If we find a week that still needs a player, that does not already have this player and the PlayWeek is not in the PLayer's blocked weeks, return.
+//
+//  If that doesn't work (usually towards the end), then let's find a week that is completely filled and the player is already scheduled to play and swap him ou
+//  with another viable week.  Once he's ben swapepd out, we can add him to this week.
+//
+//  If that fails, give up.
+//
+
+    func findSlot(p: Player) ->PlayWeek? {
+        var index = Int.random(in: 0 ..< self.playWeeks!.count)
+        var maxloop = self.playWeeks!.count
+        while maxloop > 0 {
+            // Keep trying until we exhaust all slots
+            // This slot is good only if: there are less than 4 players assigned, this player is not already assigned,
+            // this week is not in the player's blocked weeks
+            
+            maxloop -= 1
+            let pw = self.playWeeks![index]
+            if ((pw.scheduledPlayers!.count < Constants.minimumNumberOfPlayers) && pw.isNotScheduled(p:p) && pw.isNotScheduled(p: p) && pw.canSchedule(p: p)) {
+                return pw
+            }
+            index = (index + 1) % self.playWeeks!.count
         }
         
+        maxloop = self.playWeeks!.count
+        var fromIndex:Int = -1
+        var sourceWeek: PlayWeek
         
+        while(maxloop > 0) {
+            maxloop -= 1
+            sourceWeek = self.playWeeks![index]
+            if sourceWeek.isNotScheduled(p: p) {
+                fromIndex = index
+                break
+            }
+            
+            index = (index + 1) % self.playWeeks!.count
+        }
+        
+        if fromIndex == -1 {
+            print("***Couldn't find another week to swap this player with***")
+            return nil
+        }
+        
+        sourceWeek = self.playWeeks![fromIndex]
+        for swapPlayer in sourceWeek.scheduledPlayers! {
+            maxloop = self.playWeeks!.count
+            while maxloop > 0 {
+                maxloop -= 1
+                index = (index + 1) % self.playWeeks!.count
+                
+                let dstWeek = self.playWeeks![index]
+                if dstWeek.scheduledPlayers!.count < Constants.minimumNumberOfPlayers &&
+                    dstWeek.isScheduled(p: p) &&
+                    dstWeek.isNotScheduled(p: swapPlayer) &&
+                    sourceWeek.canSchedule(p: p) &&
+                    dstWeek.canSchedule(p: swapPlayer) {
+                    sourceWeek.unSchedulePlayer(p: swapPlayer)
+                    sourceWeek.schedulePlayer(p: p)
+                    dstWeek.unSchedulePlayer(p: p)
+                    dstWeek.unSchedulePlayer(p: swapPlayer)
+                    return findSlot(p: p)
+                    
+                }
+            }
+        }
+        
+        return nil
     }
+    
+    func BuildSchedule() {
+        
+        if isBuilt {return}
+        
+        for p in self.players! {
+            for _ in 0 ..< p.numWeeks! {
+                let pw = self.findSlot(p: p)
+                pw?.schedulePlayer(p: p)
+            }
+        }
+        
+        for _ in 0 ..< Constants.scrambleCount {
+            let srcweek = self.playWeeks![Int.random(in: 0 ..< self.playWeeks!.count)]
+            let dstweek = self.playWeeks![Int.random(in: 0 ..< self.playWeeks!.count)]
+            let srcplayer = self.players![Int.random(in: 0 ..< self.players!.count)]
+            let dstplayer = self.players![Int.random(in: 0 ..< self.players!.count)]
+            
+            if dstweek.isNotScheduled(p: srcplayer) &&
+                dstweek.canSchedule(p: srcplayer) &&
+                srcweek.isNotScheduled(p: dstplayer) &&
+                srcweek.canSchedule(p: dstplayer) {
+                
+                    srcweek.unSchedulePlayer(p: srcplayer)
+                    srcweek.schedulePlayer(p: dstplayer)
+                    dstweek.unSchedulePlayer(p: dstplayer)
+                    dstweek.schedulePlayer(p: srcplayer)
+            }
+        }
+        
+        self.isBuilt = true
+    }
+    
     
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)

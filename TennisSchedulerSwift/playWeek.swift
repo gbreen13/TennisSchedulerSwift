@@ -9,7 +9,7 @@
 
 import Foundation
 
-struct PlayWeek: CustomStringConvertible, Codable {
+class PlayWeek: CustomStringConvertible, Codable {
     
     enum CodingKeys: CodingKey {
         case date, scheduledPlayers
@@ -17,39 +17,63 @@ struct PlayWeek: CustomStringConvertible, Codable {
     enum PlayWeekError: Error {
         case invalidDate
     }
-    var scheduledPlayers: [String]?  // who's playing this week
+    var scheduledPlayersNames: [String]?  // who's playing this week
+	var scheduledPlayers: [Player]?			// the player class that matches the names.
     var date: Date
     
     init(date: Date) {
         self.date = date
-        self.scheduledPlayers = [String]()
+        self.scheduledPlayers = [Player]()
+		self.scheduledPlayersNames = [String]()
     }
     
-    mutating func schedulePlayer(p: Player) {
-        if self.scheduledPlayers!.contains(p.name!) {
+    func schedulePlayer(p: Player) {
+        if self.scheduledPlayers!.contains(p) {
             return// already there
         }
-        self.scheduledPlayers!.append(p.name!)
+        self.scheduledPlayers!.append(p)
         p.scheduledWeeks += 1
         
     }
-    
+	
+	func unSchedulePlayer(p: Player) {
+		if let index = self.scheduledPlayers!.firstIndex(of: p) {
+			self.scheduledPlayers!.remove(at: index)
+			p.scheduledWeeks -= 1
+		}
+		
+	}
+	
+	func isScheduled(p: Player) ->Bool {
+		return(self.scheduledPlayers!.contains(p))
+	}
+	
+	func isNotScheduled(p: Player) ->Bool {
+		return(self.isScheduled(p: p) == false)
+	}
+	
+	func canSchedule(p: Player) ->Bool {
+		return (self.isNotScheduled(p: p) && !self.scheduledPlayers!.contains(p))
+	}
+	
     var description: String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MM/dd/yy"
         var s: String = dateFormatter.string(from: self.date) + "\t"
         
         if(scheduledPlayers != nil && scheduledPlayers!.count > 0){
-            s += String(describing: self.scheduledPlayers)
+			for sp in scheduledPlayers! { s = s + "\(sp.name!), "}
         } else {
             s += "no players scheduled"
         }
         s += "\n"
         return s
     }
-    init(from decoder: Decoder) throws {
+	
+
+    required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.scheduledPlayers = try (container.decodeIfPresent([String].self, forKey: .scheduledPlayers) ?? nil)!
+        self.scheduledPlayersNames = try (container.decodeIfPresent([String].self, forKey: .scheduledPlayers) ?? nil)!
         let when: String? = try (container.decodeIfPresent(String.self, forKey: .date) ?? nil)
         if when != nil {
             let dateFormatter = DateFormatter()
@@ -58,7 +82,9 @@ struct PlayWeek: CustomStringConvertible, Codable {
         } else {
             throw PlayWeekError.invalidDate
         }
-        if self.scheduledPlayers == nil { self.scheduledPlayers = [String]()}
+        if self.scheduledPlayersNames == nil { self.scheduledPlayersNames = [String]()}
+		self.scheduledPlayers = [Player]()	// create empty array.  after the schedule has been completely read in, we will go back
+											// and cfill this in the with Player class that matches the name
     }
     
     func encode(to encoder: Encoder) throws {
@@ -66,16 +92,8 @@ struct PlayWeek: CustomStringConvertible, Codable {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MM/dd/yy"
         try container.encode(dateFormatter.string(from: self.date), forKey: .date)
-        try container.encode(scheduledPlayers, forKey: .scheduledPlayers)
+		let scheduledPlayersNames = self.scheduledPlayers!.map{ $0.name }
+		try container.encode(scheduledPlayersNames, forKey: .scheduledPlayers)
     }
-    
-    mutating func unSchedulePlayer(p: Player) {
-        var index: Int?
-        index = self.scheduledPlayers!.firstIndex(of: p.name!)
-        if index != nil {
-            self.scheduledPlayers!.append(p.name!)
-            p.scheduledWeeks -= 1
-        }
-    }
-    
+	
 }

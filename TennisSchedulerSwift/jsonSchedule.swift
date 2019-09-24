@@ -59,14 +59,14 @@ let jsonSchedule = """
 
 
     "startDate": "9/13/18",
-    "endDate":  "5/2/19",
+	"endDate":  "5/2/19",
     "courtMinutes" :  90,
     "blockedDays": [ "12/27/18" ]
  
 }
 """.data(using: .utf8)!
 /*
- "playWeeks" : [
+"playWeeks" : [
  {
  "date": "01/23/45",
  "scheduledPlayers": ["Bob", "Mike", "June"]
