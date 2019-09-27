@@ -170,7 +170,7 @@ class Schedule: Codable, CustomStringConvertible {
             
             maxloop -= 1
             let pw = self.playWeeks![index]
-            if ((pw.scheduledPlayers!.count < Constants.minimumNumberOfPlayers) && pw.isNotScheduled(p:p) && pw.isNotScheduled(p: p) && pw.canSchedule(p: p)) {
+            if pw.canSchedule(p: p) {
                 return pw
             }
             index = (index + 1) % self.playWeeks!.count
@@ -209,16 +209,16 @@ class Schedule: Codable, CustomStringConvertible {
                     dstWeek.isNotScheduled(p: swapPlayer) &&
                     sourceWeek.canSchedule(p: p) &&
                     dstWeek.canSchedule(p: swapPlayer) {
-                    sourceWeek.unSchedulePlayer(p: swapPlayer)
-                    sourceWeek.schedulePlayer(p: p)
-                    dstWeek.unSchedulePlayer(p: p)
-                    dstWeek.unSchedulePlayer(p: swapPlayer)
-                    return findSlot(p: p)
+                        sourceWeek.unSchedulePlayer(p: swapPlayer)
+                        sourceWeek.schedulePlayer(p: p)
+                        dstWeek.unSchedulePlayer(p: p)
+                        dstWeek.schedulePlayer(p: swapPlayer)
+                        return findSlot(p: p)
                     
                 }
             }
         }
-        
+        print("**give up**")
         return nil
     }
     

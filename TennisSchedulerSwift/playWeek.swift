@@ -53,14 +53,15 @@ class PlayWeek: CustomStringConvertible, Codable {
 	}
 	
 	func canSchedule(p: Player) ->Bool {
-		return (self.isNotScheduled(p: p) && !self.scheduledPlayers!.contains(p))
+		if self.scheduledPlayers!.count >= Constants.minimumNumberOfPlayers { return false}
+		return (self.isNotScheduled(p: p) && (p.blockedDays!.contains(self.date) == false))
 	}
 	
     var description: String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MM/dd/yy"
         var s: String = dateFormatter.string(from: self.date) + "\t"
-        
+        s += "(\(scheduledPlayers!.count))"
         if(scheduledPlayers != nil && scheduledPlayers!.count > 0){
 			for sp in scheduledPlayers! { s = s + "\(sp.name!), "}
         } else {
