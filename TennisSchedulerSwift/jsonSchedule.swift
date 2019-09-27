@@ -13,24 +13,24 @@ let jsonSchedule = """
     {
       "name": "Hedley LaMar",
       "percentPlaying": 1.0,
-      "blockedDays": [ "10/25/18", "1/17/19", "1/24/19", "2/21/19", "3/28/19" ]
+      "blockedDays": [ "10/25/18", "01/17/19", "01/24/19", "02/21/19", "03/28/19" ]
     },
 
     {
       "name": "Waco Kid",
       "percentPlaying": 0.5,
-      "blockedDays": [  "2/21/19", "3/28/19" ]
+      "blockedDays": [  "02/21/19", "03/28/19" ]
     },
     {
       "name": "Bart",
       "percentPlaying": 0.25,
-      "blockedDays": [ "1/17/19", "1/24/19" ]
+      "blockedDays": [ "01/17/19", "01/24/19" ]
     },
 
     {
       "name": "Mongo",
       "percentPlaying": 1.0,
-      "blockedDays": [ "4/04/19", "4/18/19" ]
+      "blockedDays": [ "04/04/19", "04/18/19" ]
    },
 
      {
@@ -58,8 +58,8 @@ let jsonSchedule = """
 
 
 
-    "startDate": "9/13/18",
-	"endDate":  "5/2/19",
+    "startDate": "09/13/18",
+	"endDate":  "05/02/19",
     "courtMinutes" :  90,
     "blockedDays": [ "12/27/18" ]
  

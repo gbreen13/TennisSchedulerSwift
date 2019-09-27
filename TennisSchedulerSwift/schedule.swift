@@ -163,6 +163,11 @@ class Schedule: Codable, CustomStringConvertible {
     func findSlot(p: Player) ->PlayWeek? {
         var index = Int.random(in: 0 ..< self.playWeeks!.count)
         var maxloop = self.playWeeks!.count
+//
+//  First, randomly pick a slot and see if there is an opening, that p is not already scheduled in here and that p can
+//  be scheduled here (not in p's blockedDays list.  If so, we found our slot.  Else, keep walking through the playweeks
+//  and find the first week that matches this criteria.
+//
         while maxloop > 0 {
             // Keep trying until we exhaust all slots
             // This slot is good only if: there are less than 4 players assigned, this player is not already assigned,
@@ -170,12 +175,17 @@ class Schedule: Codable, CustomStringConvertible {
             
             maxloop -= 1
             let pw = self.playWeeks![index]
-            if pw.canSchedule(p: p) {
+            if pw.scheduledPlayers!.count < Constants.minimumNumberOfPlayers &&
+            pw.isNotScheduled(p: p) &&
+            pw.canSchedule(p: p) {
                 return pw
             }
             index = (index + 1) % self.playWeeks!.count
         }
-        
+//
+//  If we get here, there are probably PlayWeeks that have less than min players bt already have this player scheduled.
+//  Let's try to swap this player on the short week, with another player from a week that doesn't contain player.
+//
         maxloop = self.playWeeks!.count
         var fromIndex:Int = -1
         var sourceWeek: PlayWeek

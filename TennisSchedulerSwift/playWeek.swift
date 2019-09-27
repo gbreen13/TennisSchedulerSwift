@@ -53,7 +53,7 @@ class PlayWeek: CustomStringConvertible, Codable {
 	}
 	
 	func canSchedule(p: Player) ->Bool {
-		if self.scheduledPlayers!.count >= Constants.minimumNumberOfPlayers { return false}
+// test for blocked days
 		return (self.isNotScheduled(p: p) && (p.blockedDays!.contains(self.date) == false))
 	}
 	
