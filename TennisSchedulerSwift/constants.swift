@@ -12,4 +12,5 @@ struct Constants {
     static let minimumNumberOfPlayers = 4
     static let scrambleCount = 50
     static let maxTries = 5
+    static let defaultCourtMinutes = 90
 }

@@ -67,12 +67,7 @@ let jsonSchedule = """
 }
 """.data(using: .utf8)!
 /*
-"playWeeks" : [
- {
- "date": "01/23/45",
- "scheduledPlayers": ["Bob", "Mike", "June"]
- }
- ],
+
  "MemberDues" : 120.00,
  "MemberDuesNeeded":  4,
  "HourlyCourtCost" :  80.00

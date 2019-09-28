@@ -16,23 +16,31 @@ class Schedule: Codable, CustomStringConvertible {
     var playWeeks: [PlayWeek]?
     var blockedDays: [Date]?    // weeks courts are closed (e.g. Thanksgiving)
     var players:[Player]?       // all of the members
-    var isBuilt: Bool = false   // is it built?
+    var isBuilt: Bool? = false   // is it built?
     
     enum CodingKeys: CodingKey {
-        case startDate, endDate, courtMinutes, playWeeks, blockedDays, players
+        case startDate, endDate, courtMinutes, playWeeks, blockedDays, isBuilt, players
     }
     
 //  MARK: String
     
     var description: String {
         var s: String = ""
-        
         if players != nil {
             for player in players!  {
                 s += "\(String(describing: player))\n"
             }
             s += "\n"
         }
+        for i in 0 ... 3 {
+            if players != nil {
+                for player in players!  {
+                    s += String(Array(player.name!)[i]) + " "
+                }
+                s += "\n"
+            }
+        }
+
         if playWeeks != nil {
             for pw in playWeeks! {
                 if pw.scheduledPlayers!.count < Constants.minimumNumberOfPlayers {
@@ -46,6 +54,7 @@ class Schedule: Codable, CustomStringConvertible {
                     } else {
                         s += "X"
                     }
+                    s += " "
                 }
                 s += "\t\(String(describing: pw))"
             }
@@ -94,9 +103,10 @@ class Schedule: Codable, CustomStringConvertible {
         if endDate! < startDate! {throw ScheduleError.startDateAfterEndDate("End Date before Start Date")}
         
         
-        self.courtMinutes = try (container.decodeIfPresent(Int.self, forKey: .courtMinutes) ?? nil)
+        self.courtMinutes = try (container.decodeIfPresent(Int.self, forKey: .courtMinutes) ?? Constants.defaultCourtMinutes)
         self.playWeeks = try (container.decodeIfPresent([PlayWeek].self, forKey: .playWeeks) ?? nil)
         self.players = try (container.decodeIfPresent([Player].self, forKey: .players) ?? nil)!
+        self.isBuilt = try (container.decodeIfPresent(Bool.self, forKey: .isBuilt) ?? false)
         let allDates: [String]? = try container.decodeIfPresent([String].self, forKey: .blockedDays) ?? nil
         self.blockedDays = [Date]()
         if allDates != nil { // convert array of date strings to array of dates using formatter
@@ -256,7 +266,7 @@ class Schedule: Codable, CustomStringConvertible {
     
     func BuildSchedule() {
         
-        if isBuilt {return}
+        if isBuilt! {return}
         
         for p in self.players! {
             for _ in 0 ..< p.numWeeks! {
@@ -300,6 +310,7 @@ class Schedule: Codable, CustomStringConvertible {
         try container.encode(dateFormatter.string(from: self.startDate!), forKey: .startDate)
         try container.encode(dateFormatter.string(from: self.endDate!), forKey: .endDate)
         try container.encode(courtMinutes, forKey: .courtMinutes)
+        try container.encode(isBuilt, forKey: .isBuilt)
         try container.encode(playWeeks, forKey: .playWeeks)
         try container.encode(players, forKey: .players)
         if blockedDays != nil && blockedDays!.count > 0 {
