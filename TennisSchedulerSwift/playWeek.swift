@@ -51,10 +51,18 @@ class PlayWeek: CustomStringConvertible, Codable {
 	func isNotScheduled(p: Player) ->Bool {
 		return(self.isScheduled(p: p) == false)
 	}
-	
+//
+//	couldSchedule checks to see if the playweek is blocked by the player regardless of whether the playweek is full.
+//
+	func couldSchedule(p: Player) ->Bool {
+		return self.isNotScheduled(p: p) && p.blockedDays!.contains(self.date) == false
+	}
+//
+//	canSchedule says the week is not blocked and there is room to schedule
+//
 	func canSchedule(p: Player) ->Bool {
 // test for blocked days
-		return (self.isNotScheduled(p: p) && (p.blockedDays!.contains(self.date) == false))
+		return (self.scheduledPlayers!.count < Constants.minimumNumberOfPlayers && self.couldSchedule(p:p))
 	}
 	
     var description: String {

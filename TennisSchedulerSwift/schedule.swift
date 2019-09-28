@@ -54,6 +54,7 @@ class Schedule: Codable, CustomStringConvertible {
         }
         return nil
     }
+ // MARK: Init
     
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -150,7 +151,7 @@ class Schedule: Codable, CustomStringConvertible {
             pw.scheduledPlayers = pw.scheduledPlayersNames!.map{ self.FindPlayer(name:$0)! }
         }
     }
-//
+//  MARK: Find Slot
 //  FindSlot attempts to find a an avaiable week to schedule this player.  We randomly select a week to start and then walk through the PlayWeeks from there.
 //  If we find a week that still needs a player, that does not already have this player and the PlayWeek is not in the PLayer's blocked weeks, return.
 //
@@ -193,7 +194,9 @@ class Schedule: Codable, CustomStringConvertible {
         while(maxloop > 0) {
             maxloop -= 1
             sourceWeek = self.playWeeks![index]
-            if sourceWeek.isNotScheduled(p: p) {
+            if sourceWeek.couldSchedule(p: p) {     // see if we could schedule p here if it were not already full.
+// we found a slot that has all of the players booked.  now lets see if we can move one of the scheduled players to anoher seek to make room for this
+//  player.
                 fromIndex = index
                 break
             }
@@ -205,31 +208,31 @@ class Schedule: Codable, CustomStringConvertible {
             print("***Couldn't find another week to swap this player with***")
             return nil
         }
-        
+//
+//  Now, for each of the players in the source week, try to find another week to move them to in order to create room for Player p.
+//
         sourceWeek = self.playWeeks![fromIndex]
         for swapPlayer in sourceWeek.scheduledPlayers! {
-            maxloop = self.playWeeks!.count
+            
+            maxloop = self.playWeeks!.count-1
+            index = (fromIndex + 1) % self.playWeeks!.count
+            
             while maxloop > 0 {
-                maxloop -= 1
-                index = (index + 1) % self.playWeeks!.count
                 
                 let dstWeek = self.playWeeks![index]
-                if dstWeek.scheduledPlayers!.count < Constants.minimumNumberOfPlayers &&
-                    dstWeek.isScheduled(p: p) &&
-                    dstWeek.isNotScheduled(p: swapPlayer) &&
-                    sourceWeek.canSchedule(p: p) &&
-                    dstWeek.canSchedule(p: swapPlayer) {
+
+                if dstWeek.canSchedule(p: swapPlayer) { // there is room and swapPlayer is not scheduled.
                         sourceWeek.unSchedulePlayer(p: swapPlayer)
-                        sourceWeek.schedulePlayer(p: p)
-                        dstWeek.unSchedulePlayer(p: p)
                         dstWeek.schedulePlayer(p: swapPlayer)
-                        return findSlot(p: p)
+                        return findSlot(p: p)  // ok, we should have successfully moved a player and created a slot for p.
                     
                 }
+                maxloop -= 1
+                index = (index + 1) % self.playWeeks!.count
+
             }
         }
-        print("**give up**")
-        return nil
+        return findSlot(p: p)    // one more time.
     }
     
     func BuildSchedule() {
