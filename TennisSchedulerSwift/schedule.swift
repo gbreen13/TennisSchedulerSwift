@@ -22,6 +22,8 @@ class Schedule: Codable, CustomStringConvertible {
         case startDate, endDate, courtMinutes, playWeeks, blockedDays, players
     }
     
+//  MARK: String
+    
     var description: String {
         var s: String = ""
         
@@ -33,7 +35,19 @@ class Schedule: Codable, CustomStringConvertible {
         }
         if playWeeks != nil {
             for pw in playWeeks! {
-                s += "\(String(describing: pw))"
+                if pw.scheduledPlayers!.count < Constants.minimumNumberOfPlayers {
+                    s += "🥵"
+                }
+                for player in players! {
+                    if pw.isScheduled(p: player) {
+                        s += "O"
+                    } else if pw.couldSchedule(p: player) {
+                        s += "."
+                    } else {
+                        s += "X"
+                    }
+                }
+                s += "\t\(String(describing: pw))"
             }
             s += "\n"
         }
@@ -97,7 +111,9 @@ class Schedule: Codable, CustomStringConvertible {
             self.playWeeks = [PlayWeek]()
             var thisWeek: Date = startDate!
             while thisWeek < endDate! {
-                self.playWeeks!.append(PlayWeek(date:thisWeek))
+                if self.blockedDays!.contains(thisWeek) == false {      // as long as the facility is open
+                    self.playWeeks!.append(PlayWeek(date:thisWeek))
+                }
                 thisWeek = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: thisWeek)!
             }
         }
@@ -232,8 +248,11 @@ class Schedule: Codable, CustomStringConvertible {
 
             }
         }
-        return findSlot(p: p)    // one more time.
+        return nil
     }
+    
+    
+    // MARK: BuildSchedule
     
     func BuildSchedule() {
         
@@ -241,8 +260,13 @@ class Schedule: Codable, CustomStringConvertible {
         
         for p in self.players! {
             for _ in 0 ..< p.numWeeks! {
-                let pw = self.findSlot(p: p)
-                pw?.schedulePlayer(p: p)
+                for _ in 0 ... Constants.maxTries {
+                    let pw = self.findSlot(p: p)
+                    if pw != nil {
+                        pw?.schedulePlayer(p: p)
+                        break;
+                    }
+                }
             }
         }
         
@@ -267,6 +291,7 @@ class Schedule: Codable, CustomStringConvertible {
         self.isBuilt = true
     }
     
+  // MARK: decode
     
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
