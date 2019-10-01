@@ -12,11 +12,13 @@ import Foundation
 class Player: CustomStringConvertible, Codable, Equatable {
     
     enum CodingKeys: CodingKey {
-        case blockedDays, percentPlaying, name, numWeeks, scheduledWeeks
+        case blockedDays, percentPlaying, name, numWeeks, scheduledWeeks, phone, email
     }
     
     var blockedDays:[Date]?
     var percentPlaying: Double?
+    var email: String?
+    var phone: String?
     var name: String?
     var numWeeks: Int?
     var scheduledWeeks: Int = 0
@@ -44,7 +46,8 @@ class Player: CustomStringConvertible, Codable, Equatable {
         self.percentPlaying = try container.decodeIfPresent(Double.self, forKey: .percentPlaying) ?? 0.0
         self.numWeeks = try container.decodeIfPresent(Int.self, forKey: .numWeeks) ?? 0
         self.scheduledWeeks = try container.decodeIfPresent(Int.self, forKey: .scheduledWeeks) ?? 0
-        
+        self.phone = try container.decodeIfPresent(String.self, forKey: .phone) ?? ""
+        self.email = try container.decodeIfPresent(String.self, forKey: .email) ?? ""
         let allDates: [String]? = try container.decodeIfPresent([String].self, forKey: .blockedDays) ?? nil
         self.blockedDays = [Date]()
         if allDates != nil { // convert array of date strings to array of dates using formatter
@@ -66,6 +69,8 @@ class Player: CustomStringConvertible, Codable, Equatable {
         try container.encode(percentPlaying, forKey: .percentPlaying)
         try container.encode(numWeeks, forKey: .numWeeks)
         try container.encode(scheduledWeeks, forKey: .scheduledWeeks)
+        try container.encode(phone, forKey: .phone)
+        try container.encode(email, forKey: .email)
         if blockedDays != nil && blockedDays!.count > 0 {
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "MM/dd/yy"

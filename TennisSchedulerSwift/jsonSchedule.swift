@@ -13,6 +13,8 @@ let jsonSchedule = """
     {
       "name": "Hedley LaMar",
       "percentPlaying": 1.0,
+	  "email": "unknown",
+	  "phone": "unknown",
       "blockedDays": [ "10/25/18", "01/17/19", "01/24/19", "02/21/19", "03/28/19" ]
     },
 
@@ -36,7 +38,7 @@ let jsonSchedule = """
      {
       "name": "Howard Johnson",
       "percentPlaying": 0.33,
-		"blockedDays": [ "10/25/18","01/17/19", "01/24/19" ]
+		"blockedDays": [ "01/17/19", "01/24/19" ]
     },
 
 

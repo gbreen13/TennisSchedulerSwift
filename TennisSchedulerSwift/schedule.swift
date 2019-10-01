@@ -34,6 +34,7 @@ class Schedule: Codable, CustomStringConvertible {
         }
         for i in 0 ... 3 {
             if players != nil {
+                s += "  "
                 for player in players!  {
                     s += String(Array(player.name!)[i]) + " "
                 }
@@ -45,6 +46,8 @@ class Schedule: Codable, CustomStringConvertible {
             for pw in playWeeks! {
                 if pw.scheduledPlayers!.count < Constants.minimumNumberOfPlayers {
                     s += "🥵"
+                } else {
+                    s += "  "
                 }
                 for player in players! {
                     if pw.isScheduled(p: player) {
